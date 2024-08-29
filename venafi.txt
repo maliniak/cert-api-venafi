@@ -111,6 +111,20 @@ def main():
     # Renew the certificate
     renewed_certificate = acme_client.renew_certificate(certificate_pem)
 
+    # Test Case 3: Renew a certificate
+    try:
+        print("\nTest Case 3: Renewing the certificate...")
+        renewed_certificate = acme_client.renew_certificate(certificate_pem)
+        print("Certificate renewed successfully.")
+    except Exception as e:
+        print(f"Error during certificate renewal: {e}")
+
+    # Test Case 4: Invalid domain request
+    try:
+        print("\nTest Case 4: Requesting a certificate for an unauthorized domain...")
+        invalid_cert = acme_client.request_certificate("unauthorized.example.com")
+    except Exception as e:
+        print(f"Expected error for unauthorized domain: {e}")
 
 if __name__ == "__main__":
     main()
