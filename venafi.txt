@@ -128,3 +128,59 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+---
+Vault can act as either an intermediate CA or a proxy
+ACME Challenges (DNS-01/HTTP-01) are handled by Vault, regardless of whether Vault is acting as an Intermediate CA or a Proxy.
+This ensures that domain ownership or control is properly validated before issuing certificates.
+
+1. Vault as an Intermediate CA
+In this use case, Vault is acting as a PKI (Public Key Infrastructure) intermediate CA within a hierarchy,
+where Venafi TPP provides the Root CA. Vault itself will issue certificates as an intermediate,
+but these certificates are ultimately trusted by a higher authority (the Root CA) managed by Venafi.
+
+In this model, Vault has more direct control over certificate issuance because it is an
+intermediate CA. Certificates issued via ACME are signed by Vault’s intermediate CA and are trusted within the chain
+that goes up to Venafi’s Root CA.
+
+Process of certificate issuence overview:
+1) ACME Client Requests a Certificate (clients such as web servers (e.g., Nginx, Apache) tools like Certbot, cert-issuer,
+can request certificates from Vault using the ACME protocol)
+2) Vault Handles the ACME Challenge (Vault validates the request (using DNS-01 or HTTP-01 challenge)
+3) Validation Output (on success)
+4) Vault Issues the Certificate to the ACME Client
+
+Chain of Trust: The certificate issued by Vault will be trusted because it is signed by Vault’s intermediate CA,
+which is part of the certificate chain leading back to the Venafi Root CA.
+Vault issues the certificate, signed by its intermediate CA (which was signed by Venafi’s Root CA).
+
+
+
+------------------
+
+
+
+2. Vault as a Proxy via Venafi PKI Secrets Engine
+In this use case, Vault is not acting as a CA (neither Root nor Intermediate). Instead, Vault is acting
+as a proxy that forwards certificate requests to Venafi TPP, which handles the actual certificate issuance/management.
+In this case, Venafi remains the ultimate issuer of certificates.
+
+Workflow: Vault as a Proxy (Using Venafi PKI Secrets Engine)
+In the proxy model (where Vault forwards certificate requests to Venafi for signing),
+Vault is responsible for handling the ACME protocol and performing the validation challenges (DNS or HTTP).
+Once the challenges are validated, Vault forwards the Certificate Signing Request (CSR) to Venafi for signing.
+
+
+Process of certificate issuence overview:
+1) ACME Client Requests a Certificate (clients such as web servers (e.g., Nginx, Apache) tools like Certbot, cert-issuer,
+can request certificates from Vault using the ACME protocol)
+2) Vault Handles the ACME Challenge (Vault validates the request (using DNS-01 or HTTP-01 challenge)
+3) Validation Output (on success)
+4) Vault Forwards the CSR to Venafi
+5) Venafi TPP Signs the Certificate and returns to Vault
+6) Vault Issues the Certificate to the ACME Client
+
+Proxy Model: When Vault is a proxy, it forwards all ACME requests to Venafi TPP.
+Venafi handles all certificate management, which may include signing the certificates using public or internal CAs.
+This gives you the flexibility to use public CA integrations while still leveraging Vault’s ACME functionality for automation.
+
